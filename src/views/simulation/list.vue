@@ -133,6 +133,7 @@
 
 <script>
 import { simulationApi } from '@/api'
+import SUBJECT_OPTIONS from '@/constants/subjects'
 
 export default {
   name: 'SimulationList',
@@ -160,8 +161,8 @@ export default {
         total: 0
       },
       
-      // 科目选项
-      subjectOptions: ['行测', '申论', '面试', '其他'],
+      // 科目选项（前端维护）
+      subjectOptions: SUBJECT_OPTIONS,
       
       // 表单数据
       form: {
@@ -192,7 +193,6 @@ export default {
   
   created() {
     this.fetchData()
-    this.fetchSubjects()
   },
   
   methods: {
@@ -222,17 +222,7 @@ export default {
       }
     },
     
-    // 获取科目列表
-    async fetchSubjects() {
-      try {
-        const response = await simulationApi.getSubjects()
-        if (response.code === '200' && response.result) {
-          this.subjectOptions = response.result
-        }
-      } catch (error) {
-        console.error('获取科目列表失败:', error)
-      }
-    },
+    // 如需改为后端获取科目，可在此处接回接口
     
     // 搜索
     handleSearch() {
