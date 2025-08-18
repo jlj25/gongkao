@@ -132,7 +132,9 @@
 </template>
 
 <script>
+/* eslint-disable vue/multi-word-component-names */
 import { simulationApi } from '@/api'
+import SUBJECT_OPTIONS from '@/constants/subjects'
 
 export default {
   name: 'SimulationList',
@@ -160,8 +162,8 @@ export default {
         total: 0
       },
       
-      // 科目选项
-      subjectOptions: ['行测', '申论', '面试', '其他'],
+      // 科目选项（前端维护，后端优先覆盖）
+      subjectOptions: SUBJECT_OPTIONS,
       
       // 表单数据
       form: {
@@ -208,9 +210,9 @@ export default {
         }
         
         const response = await simulationApi.getList(params)
-        if (response.code === '200') {
-          this.tableData = response.result.list
-          this.pagination.total = response.result.total
+        if (String(response.code) === '200') {
+          this.tableData = response?.result?.list || []
+          this.pagination.total = response?.result?.total || this.tableData.length
         } else {
           this.$message.error(response.message || '获取数据失败')
         }
@@ -221,13 +223,15 @@ export default {
         this.loading = false
       }
     },
-    
-    // 获取科目列表
+
+    // 获取科目列表（优先后端，失败则使用前端常量）
     async fetchSubjects() {
       try {
         const response = await simulationApi.getSubjects()
-        if (response.code === '200' && response.result) {
-          this.subjectOptions = response.result
+        const ok = String(response?.code) === '200'
+        const list = response?.result
+        if (ok && Array.isArray(list) && list.length > 0) {
+          this.subjectOptions = list
         }
       } catch (error) {
         console.error('获取科目列表失败:', error)
@@ -295,7 +299,7 @@ export default {
       ).then(async () => {
         try {
           const response = await simulationApi.delete(row.id)
-          if (response.code === '200') {
+          if (String(response.code) === '200') {
             this.$message.success('删除成功')
             this.fetchData()
           } else {
@@ -330,7 +334,7 @@ export default {
               response = await simulationApi.add(this.form)
             }
             
-            if (response.code === '200') {
+            if (String(response.code) === '200') {
               this.$message.success(this.isEdit ? '修改成功' : '新增成功')
               this.dialogVisible = false
               this.fetchData()
@@ -393,20 +397,5 @@ export default {
 
 .dialog-footer {
   text-align: right;
-}
-
-// 确保模态框在屏幕正中央
-:deep(.el-dialog) {
-  margin: 0 auto !important;
-  position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-}
-
-:deep(.el-dialog__wrapper) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
 }
 </style>
