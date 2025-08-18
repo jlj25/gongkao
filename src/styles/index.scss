@@ -65,25 +65,7 @@ div:focus {
   padding: 20px;
 }
 
-// 强制覆盖侧边栏文字颜色 - 使用更高优先级
-body .sidebar-container {
-  .el-menu-item,
-  .el-submenu__title {
-    color: #ffffff !important;
-    
-    &:hover {
-      color: #ffffff !important;
-    }
-  }
-  
-  .el-menu-item.is-active {
-    color: #409EFF !important;
-  }
-  
-  .el-submenu.is-active > .el-submenu__title {
-    color: #ffffff !important;
-  }
-}
+
 
 // 强制覆盖侧边栏背景色
 body .sidebar-container {

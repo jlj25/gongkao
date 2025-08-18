@@ -69,6 +69,7 @@
       :title="dialogTitle"
       v-model="dialogVisible"
       width="800px"
+      :center="true"
       @close="handleDialogClose"
     >
       <el-form
@@ -93,8 +94,10 @@
             v-model="form.startTime"
             type="datetime"
             placeholder="选择开始时间"
-            format="yyyy-MM-dd HH:mm:ss"
-            value-format="yyyy-MM-dd HH:mm:ss"
+            format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :default-time="defaultStartTime"
+            clearable
           />
         </el-form-item>
         <el-form-item label="结束时间" prop="endTime">
@@ -102,8 +105,10 @@
             v-model="form.endTime"
             type="datetime"
             placeholder="选择结束时间"
-            format="yyyy-MM-dd HH:mm:ss"
-            value-format="yyyy-MM-dd HH:mm:ss"
+            format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :default-time="defaultEndTime"
+            clearable
           />
         </el-form-item>
       </el-form>
@@ -167,7 +172,10 @@ export default {
         endTime: [
           { required: true, message: '请选择结束时间', trigger: 'change' }
         ]
-      }
+      },
+      // 时间选择默认时分秒（Element Plus 需要 Date 或 Date[]）
+      defaultStartTime: new Date(2000, 0, 1, 9, 0, 0),
+      defaultEndTime: new Date(2000, 0, 1, 18, 0, 0)
     }
   },
   
@@ -176,6 +184,36 @@ export default {
   },
   
   methods: {
+    // 工具：将任意可解析的时间值格式化为 YYYY-MM-DD HH:mm:ss 字符串
+    formatDateTime(val) {
+      if (!val) return ''
+      const toDate = (v) => {
+        if (v instanceof Date) return v
+        if (typeof v === 'string') {
+          // 兼容 "2025-08-18T12:00:00" 以及已是目标格式的字符串
+          const normalized = v.replace('T', ' ').slice(0, 19)
+          const parts = normalized.split(/[- :]/)
+          if (parts.length === 6) {
+            const [y, m, d, hh, mm, ss] = parts.map(p => parseInt(p, 10))
+            return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
+          }
+          const d2 = new Date(normalized)
+          if (!isNaN(d2.getTime())) return d2
+        }
+        const d = new Date(v)
+        return isNaN(d.getTime()) ? new Date() : d
+      }
+      const d = toDate(val)
+      const pad = (n) => (n < 10 ? '0' + n : '' + n)
+      return (
+        d.getFullYear() +
+        '-' + pad(d.getMonth() + 1) +
+        '-' + pad(d.getDate()) +
+        ' ' + pad(d.getHours()) +
+        ':' + pad(d.getMinutes()) +
+        ':' + pad(d.getSeconds())
+      )
+    },
     // 获取数据
     async fetchData() {
       this.loading = true
@@ -187,9 +225,16 @@ export default {
         }
         
         const response = await recruitApi.getList(params)
-        if (response.code === '200') {
-          this.tableData = response.result.list
-          this.pagination.total = response.result.total
+        if (Number(response.code) === 200) {
+          const list = Array.isArray(response?.result?.list) ? response.result.list : []
+          this.tableData = list.map(item => ({
+            ...item,
+            id: String(item.id ?? item.recruitId ?? item.uid),
+            // 后端可能返回 null，这里统一为空字符串，避免渲染/比较时异常
+            startTime: item.startTime || '',
+            endTime: item.endTime || ''
+          }))
+          this.pagination.total = response?.result?.total ?? this.tableData.length
         } else {
           this.$message.error(response.message || '获取数据失败')
         }
@@ -223,7 +268,7 @@ export default {
       this.form = {
         title: '',
         content: '',
-        startTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        startTime: this.formatDateTime(new Date()),
         endTime: ''
       }
       this.dialogVisible = true
@@ -237,7 +282,7 @@ export default {
       this.isEdit = true
       this.dialogTitle = '编辑招聘'
       this.form = {
-        id: row.id,
+        id: String(row.id),
         title: row.title,
         content: row.content,
         startTime: row.startTime,
@@ -318,14 +363,21 @@ export default {
           
           this.submitLoading = true
           try {
+            // 统一时间格式
+            const payload = {
+              ...this.form,
+              startTime: this.formatDateTime(this.form.startTime),
+              // 结束时间允许为空则不传字段
+              ...(this.form.endTime ? { endTime: this.formatDateTime(this.form.endTime) } : {})
+            }
             let response
             if (this.isEdit) {
-              response = await recruitApi.update(this.form.id, this.form)
+              response = await recruitApi.update(String(this.form.id), payload)
             } else {
-              response = await recruitApi.add(this.form)
+              response = await recruitApi.add(payload)
             }
             
-            if (response.code === '200') {
+            if (Number(response.code) === 200) {
               this.$message.success(this.isEdit ? '修改成功' : '发布成功')
               this.dialogVisible = false
               this.fetchData()
@@ -388,5 +440,20 @@ export default {
 
 .dialog-footer {
   text-align: right;
+}
+
+// 确保模态框在屏幕正中央
+:deep(.el-dialog) {
+  margin: 0 auto !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+:deep(.el-dialog__wrapper) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 </style>

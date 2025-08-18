@@ -71,21 +71,21 @@
         label-width="100px"
       >
         <el-form-item label="用户名" prop="username" v-if="!isEdit">
-          <el-input v-model="form.username" placeholder="请输入用户名" />
+          <el-input v-model.trim="form.username" placeholder="请输入用户名" />
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="!isEdit">
           <el-input
-            v-model="form.password"
+            v-model.trim="form.password"
             type="password"
             placeholder="请输入密码"
             show-password
           />
         </el-form-item>
         <el-form-item label="真实姓名" prop="name">
-          <el-input v-model="form.name" placeholder="请输入真实姓名" />
+          <el-input v-model.trim="form.name" placeholder="请输入真实姓名" />
         </el-form-item>
         <el-form-item label="联系电话" prop="phone">
-          <el-input v-model="form.phone" placeholder="请输入联系电话" />
+          <el-input v-model.trim="form.phone" placeholder="请输入联系电话" maxlength="11" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -128,13 +128,14 @@ export default {
       
       // 表单数据
       form: {
+        id: undefined,
         username: '',
         password: '',
         name: '',
         phone: ''
       },
       
-      // 表单验证规则
+      // 表单验证规则（手机号自定义校验，自动去除空格、短横线、全角数字等）
       rules: {
         username: [
           { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -148,8 +149,7 @@ export default {
           { required: true, message: '请输入真实姓名', trigger: 'blur' }
         ],
         phone: [
-          { required: true, message: '请输入联系电话', trigger: 'blur' },
-          { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
+          { validator: this.validatePhone, trigger: 'blur' }
         ]
       }
     }
@@ -160,6 +160,27 @@ export default {
   },
   
   methods: {
+    // 将全角数字转半角，去除非数字
+    normalizeDigits(value) {
+      if (!value) return ''
+      const toHalf = value.replace(/[\uFF10-\uFF19]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30))
+      return toHalf.replace(/[^0-9]/g, '')
+    },
+    // 统一获取行主键，返回字符串，避免长整型精度丢失
+    getRowId(row) {
+      const raw = row?.id ?? row?.userId ?? row?.uid
+      return raw === null || raw === undefined ? undefined : String(raw)
+    },
+    // 手机号校验：只允许以1开头的11位数字，自动净化输入再校验
+    validatePhone(rule, value, callback) {
+      const digits = this.normalizeDigits(value)
+      if (!digits) return callback(new Error('请输入联系电话'))
+      if (!/^\d{11}$/.test(digits)) return callback(new Error('请输入正确的手机号码'))
+      // 将净化后的值回填，避免后续提交出现空格/符号
+      this.form.phone = digits
+      callback()
+    },
+
     // 获取数据
     async fetchData() {
       this.loading = true
@@ -171,9 +192,15 @@ export default {
         }
         
         const response = await userApi.getList(params)
-        if (response.code === '200') {
-          this.tableData = response.result.list
-          this.pagination.total = response.result.total
+        if (Number(response.code) === 200) {
+          const list = Array.isArray(response?.result?.list) ? response.result.list : []
+          const normalizedList = list.map(item => ({
+            ...item,
+            id: String(item.id ?? item.userId ?? item.uid),
+            username: item.username ?? item.userName
+          }))
+          this.tableData = normalizedList
+          this.pagination.total = response?.result?.total ?? normalizedList.length
         } else {
           this.$message.error(response.message || '获取数据失败')
         }
@@ -205,6 +232,7 @@ export default {
       this.isEdit = false
       this.dialogTitle = '新增管理员'
       this.form = {
+        id: undefined,
         username: '',
         password: '',
         name: '',
@@ -221,7 +249,8 @@ export default {
       this.isEdit = true
       this.dialogTitle = '编辑管理员'
       this.form = {
-        id: row.id,
+        id: this.getRowId(row),
+        username: row.username ?? row.userName ?? '',
         name: row.name,
         phone: row.phone
       }
@@ -229,7 +258,12 @@ export default {
     },
     
     // 删除
-    handleDelete(row) {
+    async handleDelete(row) {
+      const id = this.getRowId(row)
+      if (!id) {
+        this.$message.error('未找到用户ID，无法删除')
+        return
+      }
       this.$confirm(
         `确定要删除管理员 "${row.name}" 吗？`,
         '提示',
@@ -240,10 +274,16 @@ export default {
         }
       ).then(async () => {
         try {
-          const response = await userApi.delete(row.id)
-          if (response.code === '200') {
+          const response = await userApi.delete(id)
+          if (Number(response.code) === 200) {
+            // 乐观更新：本地移除该行
+            this.tableData = this.tableData.filter(item => this.getRowId(item) !== id)
             this.$message.success('删除成功')
-            this.fetchData()
+            // 如果当前页被删空且不是第一页，自动回退一页并刷新
+            if (this.tableData.length === 0 && this.pagination.pageNo > 1) {
+              this.pagination.pageNo -= 1
+              this.fetchData()
+            }
           } else {
             this.$message.error(response.message || '删除失败')
           }
@@ -262,17 +302,26 @@ export default {
         if (valid) {
           this.submitLoading = true
           try {
+            // 提交前净化手机号，确保全为数字
+            if (this.form && this.form.phone) {
+              this.form.phone = this.normalizeDigits(this.form.phone)
+            }
             let response
             if (this.isEdit) {
-              response = await userApi.update(this.form.id, {
+              const payload = {
+                id: String(this.form.id),
                 name: this.form.name,
                 phone: this.form.phone
-              })
+              }
+              response = await userApi.update(String(this.form.id), payload)
             } else {
-              response = await userApi.add(this.form)
+              response = await userApi.add({
+                ...this.form,
+                id: undefined
+              })
             }
             
-            if (response.code === '200') {
+            if (Number(response.code) === 200) {
               this.$message.success(this.isEdit ? '修改成功' : '新增成功')
               this.dialogVisible = false
               this.fetchData()

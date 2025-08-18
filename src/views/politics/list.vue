@@ -61,6 +61,7 @@
       :title="dialogTitle"
       v-model="dialogVisible"
       width="800px"
+      :center="true"
       @close="handleDialogClose"
     >
       <el-form
@@ -327,5 +328,20 @@ export default {
 
 .dialog-footer {
   text-align: right;
+}
+
+// 确保模态框在屏幕正中央
+:deep(.el-dialog) {
+  margin: 0 auto !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+:deep(.el-dialog__wrapper) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 </style>

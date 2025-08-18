@@ -116,9 +116,31 @@
     & .el-submenu .el-menu-item {
       min-width: $sideBarWidth !important;
       background-color: $subMenuBg !important;
+      background: $subMenuBg !important;
+      color: #ffffff !important;
 
       &:hover {
         background-color: $subMenuHover !important;
+        background: $subMenuHover !important;
+        color: #263445 !important;
+      }
+    }
+
+    // 强制设置所有子菜单项的背景色，防止透明
+    .el-submenu .el-menu {
+      background-color: $subMenuBg !important;
+      background: $subMenuBg !important;
+    }
+
+    .el-submenu .el-menu-item {
+      background-color: $subMenuBg !important;
+      background: $subMenuBg !important;
+      color: #ffffff !important;
+      
+      &:hover {
+        background-color: $subMenuHover !important;
+        background: $subMenuHover !important;
+        color: #263445 !important;
       }
     }
   }

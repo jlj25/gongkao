@@ -62,12 +62,6 @@ export const constantRoutes = [
         name: 'UserList',
         component: () => import('@/views/user/list'),
         meta: { title: '管理员列表' }
-      },
-      {
-        path: 'add',
-        name: 'UserAdd',
-        component: () => import('@/views/user/add'),
-        meta: { title: '新增管理员' }
       }
     ]
   },
@@ -84,12 +78,6 @@ export const constantRoutes = [
         name: 'PoliticsList',
         component: () => import('@/views/politics/list'),
         meta: { title: '时政列表' }
-      },
-      {
-        path: 'add',
-        name: 'PoliticsAdd',
-        component: () => import('@/views/politics/add'),
-        meta: { title: '发布时政' }
       }
     ]
   },
@@ -106,12 +94,6 @@ export const constantRoutes = [
         name: 'SimulationList',
         component: () => import('@/views/simulation/list'),
         meta: { title: '模拟题列表' }
-      },
-      {
-        path: 'add',
-        name: 'SimulationAdd',
-        component: () => import('@/views/simulation/add'),
-        meta: { title: '新增模拟题' }
       }
     ]
   },
@@ -128,12 +110,6 @@ export const constantRoutes = [
         name: 'RecruitList',
         component: () => import('@/views/recruit/list'),
         meta: { title: '招聘列表' }
-      },
-      {
-        path: 'add',
-        name: 'RecruitAdd',
-        component: () => import('@/views/recruit/add'),
-        meta: { title: '发布招聘' }
       }
     ]
   },

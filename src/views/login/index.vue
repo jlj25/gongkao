@@ -82,45 +82,27 @@ export default {
         if (valid) {
           this.loading = true
           try {
-            // 开发阶段测试登录
-            if (this.loginForm.username === 'admin' && this.loginForm.password === 'admin') {
-              // 模拟登录成功
-              const mockResponse = {
-                code: '200',
-                result: {
-                  token: 'mock-token-' + Date.now(),
-                  id: 1,
-                  username: 'admin',
-                  name: '管理员',
-                  phone: '13800138000'
-                }
+            // 开发环境临时登录开关：.env.development 设置 VUE_APP_MOCK_LOGIN=1
+            if (
+              process.env.NODE_ENV === 'development' &&
+              process.env.VUE_APP_MOCK_LOGIN === '1' &&
+              this.loginForm.username && this.loginForm.password
+            ) {
+              const mock = {
+                token: 'dev-mock-' + Date.now(),
+                id: 1,
+                username: this.loginForm.username,
+                name: '开发管理员',
+                phone: '13800000000'
               }
-              
-              // 保存用户信息和token到localStorage
-              localStorage.setItem('token', mockResponse.result.token)
-              localStorage.setItem('userInfo', JSON.stringify({
-                id: mockResponse.result.id,
-                username: mockResponse.result.username,
-                name: mockResponse.result.name,
-                phone: mockResponse.result.phone
-              }))
-              
-              // 保存到Vuex store
-              this.$store.commit('user/SET_TOKEN', mockResponse.result.token)
-              this.$store.commit('user/SET_USER_INFO', {
-                id: mockResponse.result.id,
-                username: mockResponse.result.username,
-                name: mockResponse.result.name,
-                phone: mockResponse.result.phone
-              })
-              
-              this.$message.success('登录成功')
-              
-              // 跳转到用户管理页面
+              localStorage.setItem('token', mock.token)
+              localStorage.setItem('userInfo', JSON.stringify(mock))
+              this.$store.commit('user/SET_TOKEN', mock.token)
+              this.$store.commit('user/SET_USER_INFO', mock)
+              this.$message.success('开发模式登录成功')
               this.$router.push('/user/list')
               return
             }
-            
             const response = await userApi.login(this.loginForm)
             
             if (response.code === '200') {
@@ -165,7 +147,7 @@ export default {
 <style lang="scss" scoped>
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #263445 0%, #2b2f3a 100%);
   display: flex;
   align-items: center;
   justify-content: center;

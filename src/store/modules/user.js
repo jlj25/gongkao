@@ -1,8 +1,12 @@
+const savedToken = localStorage.getItem('token') || ''
+let savedUserInfo = null
+try { savedUserInfo = JSON.parse(localStorage.getItem('userInfo') || 'null') } catch (e) { savedUserInfo = null }
+
 const state = {
-  token: '',
-  name: '',
+  token: savedToken,
+  name: savedUserInfo && savedUserInfo.name ? savedUserInfo.name : '',
   avatar: '',
-  userInfo: null
+  userInfo: savedUserInfo
 }
 
 const mutations = {
@@ -17,11 +21,7 @@ const mutations = {
   },
   SET_USER_INFO: (state, userInfo) => {
     state.userInfo = userInfo
-    if (userInfo && userInfo.name) {
-      state.name = userInfo.name
-    } else {
-      state.name = ''
-    }
+    state.name = userInfo && userInfo.name ? userInfo.name : ''
   }
 }
 
@@ -29,8 +29,6 @@ const actions = {
   // 用户登录
   login({ commit }) {
     return new Promise((resolve) => {
-      // 这里可以调用登录API
-      // 暂时模拟登录成功
       setTimeout(() => {
         commit('SET_TOKEN', 'mock-token')
         resolve()
@@ -41,8 +39,6 @@ const actions = {
   // 获取用户信息
   getInfo({ commit }) {
     return new Promise((resolve) => {
-      // 这里可以调用获取用户信息API
-      // 暂时模拟获取成功
       setTimeout(() => {
         const data = {
           name: '管理员',
@@ -58,42 +54,22 @@ const actions = {
   // 用户登出
   logout({ commit }) {
     return new Promise((resolve) => {
-      try {
-        commit('SET_TOKEN', '')
-        commit('SET_NAME', '')
-        commit('SET_AVATAR', '')
-        commit('SET_USER_INFO', null)
-        resolve()
-      } catch (error) {
-        console.error('Store logout error:', error)
-        // 即使出错也要清除状态
-        commit('SET_TOKEN', '')
-        commit('SET_NAME', '')
-        commit('SET_AVATAR', '')
-        commit('SET_USER_INFO', null)
-        resolve()
-      }
+      commit('SET_TOKEN', '')
+      commit('SET_NAME', '')
+      commit('SET_AVATAR', '')
+      commit('SET_USER_INFO', null)
+      resolve()
     })
   },
 
   // 重置token
   resetToken({ commit }) {
     return new Promise(resolve => {
-      try {
-        commit('SET_TOKEN', '')
-        commit('SET_NAME', '')
-        commit('SET_AVATAR', '')
-        commit('SET_USER_INFO', null)
-        resolve()
-      } catch (error) {
-        console.error('Store resetToken error:', error)
-        // 即使出错也要清除状态
-        commit('SET_TOKEN', '')
-        commit('SET_NAME', '')
-        commit('SET_AVATAR', '')
-        commit('SET_USER_INFO', null)
-        resolve()
-      }
+      commit('SET_TOKEN', '')
+      commit('SET_NAME', '')
+      commit('SET_AVATAR', '')
+      commit('SET_USER_INFO', null)
+      resolve()
     })
   }
 }
