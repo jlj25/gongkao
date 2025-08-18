@@ -86,8 +86,10 @@
             v-model="form.publishTime"
             type="datetime"
             placeholder="选择发布时间"
-            format="yyyy-MM-dd HH:mm:ss"
-            value-format="yyyy-MM-dd HH:mm:ss"
+            format="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :teleported="true"
+            clearable
           />
         </el-form-item>
       </el-form>
@@ -156,6 +158,36 @@ export default {
   },
   
   methods: {
+    // 工具：将任意可解析的时间值格式化为 YYYY-MM-DD HH:mm:ss 字符串
+    formatDateTime(val) {
+      if (!val) return ''
+      const toDate = (v) => {
+        if (v instanceof Date) return v
+        if (typeof v === 'string') {
+          // 兼容 "2025-08-18T12:00:00" 以及已是目标格式的字符串
+          const normalized = v.replace('T', ' ').slice(0, 19)
+          const parts = normalized.split(/[- :]/)
+          if (parts.length === 6) {
+            const [y, m, d, hh, mm, ss] = parts.map(p => parseInt(p, 10))
+            return new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
+          }
+          const d2 = new Date(normalized)
+          if (!isNaN(d2.getTime())) return d2
+        }
+        const d = new Date(v)
+        return isNaN(d.getTime()) ? new Date() : d
+      }
+      const d = toDate(val)
+      const pad = (n) => (n < 10 ? '0' + n : '' + n)
+      return (
+        d.getFullYear() +
+        '-' + pad(d.getMonth() + 1) +
+        '-' + pad(d.getDate()) +
+        ' ' + pad(d.getHours()) +
+        ':' + pad(d.getMinutes()) +
+        ':' + pad(d.getSeconds())
+      )
+    },
     // 获取数据
     async fetchData() {
       this.loading = true
@@ -203,7 +235,7 @@ export default {
       this.form = {
         title: '',
         content: '',
-        publishTime: new Date().toISOString().slice(0, 19).replace('T', ' ')
+        publishTime: this.formatDateTime(new Date())
       }
       this.dialogVisible = true
       this.$nextTick(() => {
@@ -219,7 +251,7 @@ export default {
         id: row.id,
         title: row.title,
         content: row.content,
-        publishTime: row.publishTime
+        publishTime: this.formatDateTime(row.publishTime)
       }
       this.dialogVisible = true
     },
@@ -258,11 +290,15 @@ export default {
         if (valid) {
           this.submitLoading = true
           try {
+            const payload = {
+              ...this.form,
+              publishTime: this.formatDateTime(this.form.publishTime)
+            }
             let response
             if (this.isEdit) {
-              response = await politicsApi.update(this.form.id, this.form)
+              response = await politicsApi.update(this.form.id, payload)
             } else {
-              response = await politicsApi.add(this.form)
+              response = await politicsApi.add(payload)
             }
             
             if (response.code === '200') {
