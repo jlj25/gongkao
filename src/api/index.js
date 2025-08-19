@@ -163,45 +163,74 @@ export const recruitApi = {
 
 // 对象存储管理相关API
 export const ossApi = {
-  // 上传图片
+  // 上传图片 - 临时模拟实现
   uploadImage: (file) => {
-    console.log('准备上传图片，文件信息:', {
+    console.log('模拟上传图片，文件信息:', {
       name: file.name,
       size: file.size,
       type: file.type
     })
     
+    // 临时模拟：生成一个假的URL
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockUrl = `https://mock-storage.example.com/images/${Date.now()}_${file.name}`
+        console.log('模拟图片上传成功，返回URL:', mockUrl)
+        resolve({
+          code: '200',
+          message: '上传成功',
+          result: {
+            url: mockUrl
+          }
+        })
+      }, 1000) // 模拟1秒上传时间
+    })
+  },
+
+  // 上传PDF文件 - 临时模拟实现
+  uploadPdf: (file) => {
+    console.log('模拟上传PDF，文件信息:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
+    
+    // 临时模拟：生成一个假的URL
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockUrl = `https://mock-storage.example.com/pdfs/${Date.now()}_${file.name}`
+        console.log('模拟PDF上传成功，返回URL:', mockUrl)
+        resolve({
+          code: '200',
+          message: '上传成功',
+          result: {
+            url: mockUrl
+          }
+        })
+      }, 1500) // 模拟1.5秒上传时间
+    })
+  }
+  
+  // TODO: 当后端实现了真实的上传接口后，替换为以下代码：
+  /*
+  uploadImage: (file) => {
     const formData = new FormData()
     formData.append('file', file)
-    
-    console.log('发送图片上传请求到:', '/api/oss/upload/image')
-    
     return request({
       url: '/api/oss/upload/image',
       method: 'post',
       data: formData
-      // 注意：不要手动设置Content-Type，让浏览器自动设置multipart/form-data的boundary
     })
   },
 
-  // 上传PDF文件
   uploadPdf: (file) => {
-    console.log('准备上传PDF，文件信息:', {
-      name: file.name,
-      size: file.size,
-      type: file.type
-    })
-    
     const formData = new FormData()
     formData.append('file', file)
-    
-    console.log('发送PDF上传请求到:', '/api/oss/upload/pdf')
-    
     return request({
       url: '/api/oss/upload/pdf',
       method: 'post',
       data: formData
-      // 注意：不要手动设置Content-Type，让浏览器自动设置multipart/form-data的boundary
     })
   }
+  */
 }
