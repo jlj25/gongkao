@@ -120,7 +120,7 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="PDF文件" prop="pdfUrl">
+        <el-form-item label="PDF文件">
           <div class="upload-section">
             <el-upload
               ref="pdfUpload"
@@ -140,9 +140,18 @@
               <span>当前文件：</span>
               <el-button size="small" type="text" @click="handleViewPdf(form.pdfUrl)">查看PDF</el-button>
             </div>
+            <!-- 手动输入URL的备选方案 -->
+            <div class="manual-input" style="margin-top: 10px;">
+              <el-input 
+                v-model="form.pdfUrl" 
+                placeholder="或者手动输入PDF文件URL" 
+                size="small"
+                clearable
+              />
+            </div>
           </div>
         </el-form-item>
-        <el-form-item label="图片" prop="images">
+        <el-form-item label="图片">
           <div class="upload-section">
             <el-upload
               ref="imageUpload"
@@ -173,6 +182,15 @@
                   style="width: 60px; height: 60px; margin-right: 8px; border-radius: 4px;"
                 />
               </div>
+            </div>
+            <!-- 手动输入URL的备选方案 -->
+            <div class="manual-input" style="margin-top: 10px;">
+              <el-input 
+                v-model="form.images" 
+                placeholder="或者手动输入图片URL，多个用逗号分隔" 
+                size="small"
+                clearable
+              />
             </div>
           </div>
         </el-form-item>
@@ -252,13 +270,8 @@ export default {
         ],
         subject: [
           { required: true, message: '请选择科目', trigger: 'change' }
-        ],
-        pdfUrl: [
-          { required: true, message: '请输入PDF文件URL', trigger: 'blur' }
-        ],
-        images: [
-          { required: true, message: '请输入图片URL', trigger: 'blur' }
         ]
+        // 注意：pdfUrl和images不再设为必填，因为可以通过文件上传获取
       }
     }
   },
@@ -299,11 +312,22 @@ export default {
     async fetchSubjects() {
       try {
         const response = await simulationApi.getSubjects()
+        console.log('科目API响应:', response) // 调试日志
         if (response.code === '200' && response.result) {
-          this.subjectOptions = response.result
+          // 确保result是数组格式
+          if (Array.isArray(response.result)) {
+            this.subjectOptions = response.result
+          } else {
+            console.warn('科目API返回数据格式不正确，期望数组，实际:', response.result)
+          }
+        } else {
+          console.warn('获取科目列表失败，使用默认科目:', response.message)
+          // 如果API调用失败，保持默认的科目选项
         }
       } catch (error) {
         console.error('获取科目列表失败:', error)
+        console.warn('使用默认科目选项')
+        // 如果API调用失败，保持默认的科目选项
       }
     },
     
@@ -400,6 +424,18 @@ export default {
     async handleSubmit() {
       this.$refs.form.validate(async (valid) => {
         if (valid) {
+          // 自定义验证：检查是否有PDF文件或URL
+          if (!this.form.pdfUrl && this.pdfFileList.length === 0) {
+            this.$message.error('请上传PDF文件或输入PDF文件URL')
+            return
+          }
+          
+          // 自定义验证：检查是否有图片文件或URL
+          if (!this.form.images && this.imageFileList.length === 0) {
+            this.$message.error('请上传图片或输入图片URL')
+            return
+          }
+          
           this.submitLoading = true
           try {
             // 准备提交的数据
@@ -410,6 +446,9 @@ export default {
               const pdfUrl = await this.uploadPdfFile()
               if (pdfUrl) {
                 submitData.pdfUrl = pdfUrl
+              } else {
+                this.$message.error('PDF文件上传失败，请重试')
+                return
               }
             }
             
@@ -421,6 +460,9 @@ export default {
                 const existingImages = this.form.images ? this.form.images.split(',').map(img => img.trim()).filter(img => img) : []
                 const allImages = [...existingImages, ...imageUrls]
                 submitData.images = allImages.join(',')
+              } else {
+                this.$message.error('图片文件上传失败，请重试')
+                return
               }
             }
             
