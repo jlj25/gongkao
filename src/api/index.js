@@ -160,3 +160,34 @@ export const recruitApi = {
     params
   })
 }
+
+// 对象存储管理相关API
+export const ossApi = {
+  // 上传图片
+  uploadImage: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request({
+      url: '/api/oss/upload/image',
+      method: 'post',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  // 上传PDF文件
+  uploadPdf: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request({
+      url: '/api/oss/upload/pdf',
+      method: 'post',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  }
+}
