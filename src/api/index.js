@@ -175,9 +175,10 @@ export const ossApi = {
     formData.append('file', file)
     
     return request({
-      url: '/api/oss/upload/image',
+      url: '/api/images/upload',
       method: 'post',
       data: formData
+      // 让浏览器自动设置Content-Type和boundary
     })
   },
 
@@ -193,9 +194,10 @@ export const ossApi = {
     formData.append('file', file)
     
     return request({
-      url: '/api/oss/upload/pdf',
+      url: '/api/pdf/upload',
       method: 'post',
       data: formData
+      // 让浏览器自动设置Content-Type和boundary
     })
   }
 }

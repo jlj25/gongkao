@@ -26,9 +26,13 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    // 统一使用 JSON
     if (!config.headers) config.headers = {}
-    config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json'
+    
+    // 只为非FormData请求设置JSON Content-Type
+    // FormData请求需要浏览器自动设置multipart/form-data和boundary
+    if (!(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = config.headers['Content-Type'] || 'application/json'
+    }
 
     // 在发送请求之前附带 token（兼容多种后台约定）
     const token = localStorage.getItem('token')
