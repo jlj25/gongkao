@@ -160,3 +160,44 @@ export const recruitApi = {
     params
   })
 }
+
+// 对象存储管理相关API
+export const ossApi = {
+  // 上传图片
+  uploadImage: (file) => {
+    console.log('上传图片到服务器，文件信息:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    return request({
+      url: '/api/images/upload',
+      method: 'post',
+      data: formData
+      // 让浏览器自动设置Content-Type和boundary
+    })
+  },
+
+  // 上传PDF文件
+  uploadPdf: (file) => {
+    console.log('上传PDF到服务器，文件信息:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    return request({
+      url: '/api/pdf/upload',
+      method: 'post',
+      data: formData
+      // 让浏览器自动设置Content-Type和boundary
+    })
+  }
+}
