@@ -165,29 +165,43 @@ export const recruitApi = {
 export const ossApi = {
   // 上传图片
   uploadImage: (file) => {
+    console.log('准备上传图片，文件信息:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
+    
     const formData = new FormData()
     formData.append('file', file)
+    
+    console.log('发送图片上传请求到:', '/api/oss/upload/image')
+    
     return request({
       url: '/api/oss/upload/image',
       method: 'post',
-      data: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      data: formData
+      // 注意：不要手动设置Content-Type，让浏览器自动设置multipart/form-data的boundary
     })
   },
 
   // 上传PDF文件
   uploadPdf: (file) => {
+    console.log('准备上传PDF，文件信息:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    })
+    
     const formData = new FormData()
     formData.append('file', file)
+    
+    console.log('发送PDF上传请求到:', '/api/oss/upload/pdf')
+    
     return request({
       url: '/api/oss/upload/pdf',
       method: 'post',
-      data: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      data: formData
+      // 注意：不要手动设置Content-Type，让浏览器自动设置multipart/form-data的boundary
     })
   }
 }

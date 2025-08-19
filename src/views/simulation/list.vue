@@ -140,15 +140,7 @@
               <span>当前文件：</span>
               <el-button size="small" type="text" @click="handleViewPdf(form.pdfUrl)">查看PDF</el-button>
             </div>
-            <!-- 手动输入URL的备选方案 -->
-            <div class="manual-input" style="margin-top: 10px;">
-              <el-input 
-                v-model="form.pdfUrl" 
-                placeholder="或者手动输入PDF文件URL" 
-                size="small"
-                clearable
-              />
-            </div>
+
           </div>
         </el-form-item>
         <el-form-item label="图片">
@@ -183,15 +175,7 @@
                 />
               </div>
             </div>
-            <!-- 手动输入URL的备选方案 -->
-            <div class="manual-input" style="margin-top: 10px;">
-              <el-input 
-                v-model="form.images" 
-                placeholder="或者手动输入图片URL，多个用逗号分隔" 
-                size="small"
-                clearable
-              />
-            </div>
+
           </div>
         </el-form-item>
         <el-form-item label="描述" prop="description">
@@ -424,15 +408,15 @@ export default {
     async handleSubmit() {
       this.$refs.form.validate(async (valid) => {
         if (valid) {
-          // 自定义验证：检查是否有PDF文件或URL
-          if (!this.form.pdfUrl && this.pdfFileList.length === 0) {
-            this.$message.error('请上传PDF文件或输入PDF文件URL')
+          // 自定义验证：检查是否有PDF文件
+          if (this.pdfFileList.length === 0) {
+            this.$message.error('请选择PDF文件')
             return
           }
           
-          // 自定义验证：检查是否有图片文件或URL
-          if (!this.form.images && this.imageFileList.length === 0) {
-            this.$message.error('请上传图片或输入图片URL')
+          // 自定义验证：检查是否有图片文件
+          if (this.imageFileList.length === 0) {
+            this.$message.error('请选择图片文件')
             return
           }
           
@@ -441,30 +425,23 @@ export default {
             // 准备提交的数据
             const submitData = { ...this.form }
             
-            // 如果有新的PDF文件，先上传
-            if (this.pdfFileList.length > 0) {
-              const pdfUrl = await this.uploadPdfFile()
-              if (pdfUrl) {
-                submitData.pdfUrl = pdfUrl
-              } else {
-                this.$message.error('PDF文件上传失败，请重试')
-                return
-              }
+            // 上传PDF文件
+            this.$message.info('正在上传PDF文件...')
+            const pdfUrl = await this.uploadPdfFile()
+            if (!pdfUrl) {
+              this.$message.error('PDF文件上传失败，请检查网络连接或联系管理员')
+              return
             }
+            submitData.pdfUrl = pdfUrl
             
-            // 如果有新的图片文件，先上传
-            if (this.imageFileList.length > 0) {
-              const imageUrls = await this.uploadImageFiles()
-              if (imageUrls.length > 0) {
-                // 合并新上传的图片和已有的图片
-                const existingImages = this.form.images ? this.form.images.split(',').map(img => img.trim()).filter(img => img) : []
-                const allImages = [...existingImages, ...imageUrls]
-                submitData.images = allImages.join(',')
-              } else {
-                this.$message.error('图片文件上传失败，请重试')
-                return
-              }
+            // 上传图片文件
+            this.$message.info('正在上传图片文件...')
+            const imageUrls = await this.uploadImageFiles()
+            if (imageUrls.length === 0) {
+              this.$message.error('图片文件上传失败，请检查网络连接或联系管理员')
+              return
             }
+            submitData.images = imageUrls.join(',')
             
             let response
             if (this.isEdit) {
@@ -579,16 +556,25 @@ export default {
       if (!file) return null
       
       try {
+        console.log('开始上传PDF文件:', file.name, file.size)
         const response = await ossApi.uploadPdf(file)
-        if (response.code === '200') {
+        console.log('PDF上传响应:', response)
+        
+        if (response && response.code === '200' && response.result && response.result.url) {
+          this.$message.success('PDF文件上传成功')
           return response.result.url
         } else {
-          this.$message.error(response.message || 'PDF上传失败')
+          console.error('PDF上传失败，响应:', response)
+          this.$message.error(response?.message || 'PDF上传失败：服务器响应异常')
           return null
         }
       } catch (error) {
-        console.error('PDF上传失败:', error)
-        this.$message.error('PDF上传失败')
+        console.error('PDF上传网络错误:', error)
+        if (error.message && error.message.includes('Network Error')) {
+          this.$message.error('网络连接失败，请检查：1. 后端服务是否启动 2. 上传接口是否存在 3. 网络连接是否正常')
+        } else {
+          this.$message.error('PDF上传失败：' + (error.message || '未知错误'))
+        }
         return null
       }
     },
@@ -602,22 +588,36 @@ export default {
         if (!file) return null
         
         try {
+          console.log('开始上传图片文件:', file.name, file.size)
           const response = await ossApi.uploadImage(file)
-          if (response.code === '200') {
+          console.log('图片上传响应:', response)
+          
+          if (response && response.code === '200' && response.result && response.result.url) {
             return response.result.url
           } else {
-            this.$message.error(`图片上传失败: ${response.message}`)
+            console.error('图片上传失败，响应:', response)
+            this.$message.error(`图片 ${file.name} 上传失败: ${response?.message || '服务器响应异常'}`)
             return null
           }
         } catch (error) {
-          console.error('图片上传失败:', error)
-          this.$message.error('图片上传失败')
+          console.error('图片上传网络错误:', error)
+          if (error.message && error.message.includes('Network Error')) {
+            this.$message.error(`图片 ${file.name} 网络连接失败，请检查后端服务和网络连接`)
+          } else {
+            this.$message.error(`图片 ${file.name} 上传失败：${error.message || '未知错误'}`)
+          }
           return null
         }
       })
       
       const results = await Promise.all(uploadPromises)
-      return results.filter(url => url !== null)
+      const successUrls = results.filter(url => url !== null)
+      
+      if (successUrls.length > 0) {
+        this.$message.success(`成功上传 ${successUrls.length} 张图片`)
+      }
+      
+      return successUrls
     }
   }
 }
