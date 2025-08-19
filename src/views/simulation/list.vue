@@ -559,10 +559,23 @@ export default {
         console.log('开始上传PDF文件:', file.name, file.size)
         const response = await ossApi.uploadPdf(file)
         console.log('PDF上传响应:', response)
+        console.log('响应结构详情:', JSON.stringify(response, null, 2))
         
-        if (response && response.code === '200' && response.result && response.result.url) {
-          this.$message.success('PDF文件上传成功')
-          return response.result.url
+        if (response && response.code === '200') {
+          // 检查不同可能的URL字段位置
+          let fileUrl = null
+          if (response.result) {
+            fileUrl = response.result.url || response.result.fileUrl || response.result.path || response.result
+          }
+          
+          if (fileUrl && typeof fileUrl === 'string') {
+            this.$message.success('PDF文件上传成功')
+            return fileUrl
+          } else {
+            console.error('PDF上传成功但未找到文件URL，响应结构:', response)
+            this.$message.error('PDF上传成功但未返回文件URL，请检查后端接口返回格式')
+            return null
+          }
         } else {
           console.error('PDF上传失败，响应:', response)
           this.$message.error(response?.message || 'PDF上传失败：服务器响应异常')
@@ -591,9 +604,22 @@ export default {
           console.log('开始上传图片文件:', file.name, file.size)
           const response = await ossApi.uploadImage(file)
           console.log('图片上传响应:', response)
+          console.log('图片响应结构详情:', JSON.stringify(response, null, 2))
           
-          if (response && response.code === '200' && response.result && response.result.url) {
-            return response.result.url
+          if (response && response.code === '200') {
+            // 检查不同可能的URL字段位置
+            let fileUrl = null
+            if (response.result) {
+              fileUrl = response.result.url || response.result.fileUrl || response.result.path || response.result
+            }
+            
+            if (fileUrl && typeof fileUrl === 'string') {
+              return fileUrl
+            } else {
+              console.error('图片上传成功但未找到文件URL，响应结构:', response)
+              this.$message.error(`图片 ${file.name} 上传成功但未返回文件URL`)
+              return null
+            }
           } else {
             console.error('图片上传失败，响应:', response)
             this.$message.error(`图片 ${file.name} 上传失败: ${response?.message || '服务器响应异常'}`)
